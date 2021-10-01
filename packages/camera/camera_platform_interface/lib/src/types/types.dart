@@ -9,3 +9,4 @@ export 'flash_mode.dart';
 export 'image_format_group.dart';
 export 'exposure_mode.dart';
 export 'focus_mode.dart';
+export 'codec_type.dart';

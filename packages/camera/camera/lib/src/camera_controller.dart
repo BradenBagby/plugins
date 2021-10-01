@@ -225,10 +225,18 @@ class CameraController extends ValueNotifier<CameraValue> {
     this.resolutionPreset, {
     this.enableAudio = true,
     this.imageFormatGroup,
+    this.codecType,
   }) : super(const CameraValue.uninitialized());
 
   /// The properties of the camera device controlled by this controller.
   final CameraDescription description;
+
+  /// The codec type this camera is targeting for video recordings
+  ///
+  /// This codec type is not guarenteed to be available on the device,
+  /// if unavailable a lower resolution wil be used
+  /// see also: [CodecType]
+  final CodecType? codecType;
 
   /// The resolution this controller is targeting.
   ///
@@ -290,6 +298,7 @@ class CameraController extends ValueNotifier<CameraValue> {
         description,
         resolutionPreset,
         enableAudio: enableAudio,
+        codecType: codecType,
       );
 
       unawaited(CameraPlatform.instance

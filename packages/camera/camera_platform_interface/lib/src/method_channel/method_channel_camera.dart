@@ -7,6 +7,7 @@ import 'dart:math';
 
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:camera_platform_interface/src/events/device_event.dart';
+import 'package:camera_platform_interface/src/types/codec_type.dart';
 import 'package:camera_platform_interface/src/types/focus_mode.dart';
 import 'package:camera_platform_interface/src/types/image_format_group.dart';
 import 'package:camera_platform_interface/src/utils/utils.dart';
@@ -83,6 +84,7 @@ class MethodChannelCamera extends CameraPlatform {
     CameraDescription cameraDescription,
     ResolutionPreset? resolutionPreset, {
     bool enableAudio = false,
+    CodecType? codecType,
   }) async {
     try {
       final reply = await _channel
@@ -92,6 +94,7 @@ class MethodChannelCamera extends CameraPlatform {
             ? _serializeResolutionPreset(resolutionPreset)
             : null,
         'enableAudio': enableAudio,
+        'codecType': codecType != null ? _serializeCodecType(codecType) : null,
       });
 
       return reply!['cameraId'];
@@ -453,6 +456,16 @@ class MethodChannelCamera extends CameraPlatform {
         return 'low';
       default:
         throw ArgumentError('Unknown ResolutionPreset value');
+    }
+  }
+
+  /// Returns the codec type as a string
+  String _serializeCodecType(CodecType codecType) {
+    switch (codecType) {
+      case CodecType.HEVC:
+        return "HEVC";
+      case CodecType.H264:
+        return "H264";
     }
   }
 

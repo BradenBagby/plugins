@@ -8,6 +8,7 @@ import 'dart:math';
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:camera_platform_interface/src/events/device_event.dart';
 import 'package:camera_platform_interface/src/method_channel/method_channel_camera.dart';
+import 'package:camera_platform_interface/src/types/codec_type.dart';
 import 'package:camera_platform_interface/src/types/exposure_mode.dart';
 import 'package:camera_platform_interface/src/types/focus_mode.dart';
 import 'package:camera_platform_interface/src/types/image_format_group.dart';
@@ -55,6 +56,7 @@ abstract class CameraPlatform extends PlatformInterface {
     CameraDescription cameraDescription,
     ResolutionPreset? resolutionPreset, {
     bool enableAudio = false,
+    CodecType? codecType,
   }) {
     throw UnimplementedError('createCamera() is not implemented.');
   }
