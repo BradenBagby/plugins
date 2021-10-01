@@ -367,6 +367,7 @@ AVCaptureAudioDataOutputSampleBufferDelegate>
 }
 // Format used for video and image streaming.
 FourCharCode videoFormat = kCVPixelFormatType_32BGRA;
+AVVideoCodecType _codecType;
 NSString *const errorMethod = @"error";
 
 - (instancetype)initWithCameraName:(NSString *)cameraName
@@ -392,6 +393,7 @@ NSString *const errorMethod = @"error";
     _focusMode = FocusModeAuto;
     _lockedCaptureOrientation = UIDeviceOrientationUnknown;
     _deviceOrientation = orientation;
+    _codecType = codecType;
     
     NSError *localError = nil;
     _captureVideoInput = [AVCaptureDeviceInput deviceInputWithDevice:_captureDevice
@@ -404,16 +406,8 @@ NSString *const errorMethod = @"error";
     
     _captureVideoOutput = [AVCaptureVideoDataOutput new];
     
-    // build configuration
-    NSMutableDictionary<NSString *, id> *_videoSettings =[[NSMutableDictionary alloc] init];
-    [_videoSettings setValue: @(videoFormat) forKey: (NSString *)kCVPixelBufferPixelFormatTypeKey];
-    if(codecType) {
-        if (@available(iOS 11.0, *)) {
-            [_videoSettings setValue: codecType forKey: AVVideoCodecKey];
-        }
-    }
-    
-    _captureVideoOutput.videoSettings = _videoSettings;
+    _captureVideoOutput.videoSettings =
+         @{(NSString *)kCVPixelBufferPixelFormatTypeKey : @(videoFormat)};
     [_captureVideoOutput setAlwaysDiscardsLateVideoFrames:YES];
     [_captureVideoOutput setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
     
@@ -1241,8 +1235,23 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         return NO;
     }
     
-    NSDictionary *videoSettings = [_captureVideoOutput
-                                   recommendedVideoSettingsForAssetWriterWithOutputFileType:AVFileTypeMPEG4];
+   
+    NSDictionary *videoSettings;
+    // add codec type
+    if(_codecType) {
+        if (@available(iOS 11.0, *)) {
+            NSArray<AVVideoCodecType> *availableVideoCodecTypes = [_captureVideoOutput availableVideoCodecTypesForAssetWriterWithOutputFileType:AVFileTypeMPEG4];
+            if ([availableVideoCodecTypes containsObject:_codecType]) {
+               videoSettings = [_captureVideoOutput recommendedVideoSettingsForVideoCodecType:_codecType assetWriterOutputFileType:AVFileTypeMPEG4];
+            }else{
+                printf("codec type not available");
+            }
+        }
+    }else{
+        videoSettings = [_captureVideoOutput
+                         recommendedVideoSettingsForAssetWriterWithOutputFileType:AVFileTypeMPEG4];
+    }
+    
     _videoWriterInput = [AVAssetWriterInput assetWriterInputWithMediaType:AVMediaTypeVideo
                                                            outputSettings:videoSettings];
     
