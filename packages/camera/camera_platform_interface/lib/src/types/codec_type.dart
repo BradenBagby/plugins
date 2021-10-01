@@ -7,3 +7,17 @@ enum CodecType {
   /// The H.264 video codec.
   H264,
 }
+
+/// Returns codec type for string
+CodecType? deserializeCodecType(String? codecTypeString) {
+  switch (codecTypeString) {
+    case null:
+      return null;
+    case "HEVC":
+      return CodecType.HEVC;
+    case "H264":
+      return CodecType.H264;
+    default:
+      throw ArgumentError('Unknown codec type string: $codecTypeString');
+  }
+}

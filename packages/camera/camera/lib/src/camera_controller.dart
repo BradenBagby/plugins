@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:camera/camera.dart';
@@ -49,6 +50,7 @@ class CameraValue {
     this.recordingOrientation,
     this.isPreviewPaused = false,
     this.previewPauseOrientation,
+    this.codecType,
   }) : _isRecordingPaused = isRecordingPaused;
 
   /// Creates a new camera controller state for an uninitialized controller.
@@ -139,30 +141,38 @@ class CameraValue {
   /// The orientation of the currently running video recording.
   final DeviceOrientation? recordingOrientation;
 
+  /// The codec type this camera is targeting for video recordings
+  ///
+  /// This codec type is not guarenteed to be available on the device,
+  /// if unavailable a lower resolution wil be used
+  /// see also: [CodecType]
+  final CodecType? codecType;
+
   /// Creates a modified copy of the object.
   ///
   /// Explicitly specified fields get the specified value, all other fields get
   /// the same value of the current object.
-  CameraValue copyWith({
-    bool? isInitialized,
-    bool? isRecordingVideo,
-    bool? isTakingPicture,
-    bool? isStreamingImages,
-    String? errorDescription,
-    Size? previewSize,
-    bool? isRecordingPaused,
-    FlashMode? flashMode,
-    ExposureMode? exposureMode,
-    FocusMode? focusMode,
-    bool? exposurePointSupported,
-    bool? focusPointSupported,
-    DeviceOrientation? deviceOrientation,
-    Optional<DeviceOrientation>? lockedCaptureOrientation,
-    Optional<DeviceOrientation>? recordingOrientation,
-    bool? isPreviewPaused,
-    Optional<DeviceOrientation>? previewPauseOrientation,
-  }) {
+  CameraValue copyWith(
+      {bool? isInitialized,
+      bool? isRecordingVideo,
+      bool? isTakingPicture,
+      bool? isStreamingImages,
+      String? errorDescription,
+      Size? previewSize,
+      bool? isRecordingPaused,
+      FlashMode? flashMode,
+      ExposureMode? exposureMode,
+      FocusMode? focusMode,
+      bool? exposurePointSupported,
+      bool? focusPointSupported,
+      DeviceOrientation? deviceOrientation,
+      Optional<DeviceOrientation>? lockedCaptureOrientation,
+      Optional<DeviceOrientation>? recordingOrientation,
+      bool? isPreviewPaused,
+      Optional<DeviceOrientation>? previewPauseOrientation,
+      CodecType? codecType}) {
     return CameraValue(
+      codecType: codecType ?? this.codecType,
       isInitialized: isInitialized ?? this.isInitialized,
       errorDescription: errorDescription,
       previewSize: previewSize ?? this.previewSize,
@@ -207,7 +217,8 @@ class CameraValue {
         'lockedCaptureOrientation: $lockedCaptureOrientation, '
         'recordingOrientation: $recordingOrientation, '
         'isPreviewPaused: $isPreviewPaused, '
-        'previewPausedOrientation: $previewPauseOrientation)';
+        'previewPausedOrientation: $previewPauseOrientation) '
+        'codecType: $codecType)';
   }
 }
 
@@ -225,18 +236,10 @@ class CameraController extends ValueNotifier<CameraValue> {
     this.resolutionPreset, {
     this.enableAudio = true,
     this.imageFormatGroup,
-    this.codecType,
   }) : super(const CameraValue.uninitialized());
 
   /// The properties of the camera device controlled by this controller.
   final CameraDescription description;
-
-  /// The codec type this camera is targeting for video recordings
-  ///
-  /// This codec type is not guarenteed to be available on the device,
-  /// if unavailable a lower resolution wil be used
-  /// see also: [CodecType]
-  final CodecType? codecType;
 
   /// The resolution this controller is targeting.
   ///
@@ -277,7 +280,7 @@ class CameraController extends ValueNotifier<CameraValue> {
   /// Initializes the camera on the device.
   ///
   /// Throws a [CameraException] if the initialization fails.
-  Future<void> initialize() async {
+  Future<void> initialize({CodecType? codecType}) async {
     if (_isDisposed) {
       throw CameraException(
         'Disposed CameraController',
@@ -313,21 +316,18 @@ class CameraController extends ValueNotifier<CameraValue> {
         imageFormatGroup: imageFormatGroup ?? ImageFormatGroup.unknown,
       );
 
+      final cameraInitializedEvent = await _initializeCompleter.future;
       value = value.copyWith(
         isInitialized: true,
-        previewSize: await _initializeCompleter.future
-            .then((CameraInitializedEvent event) => Size(
-                  event.previewWidth,
-                  event.previewHeight,
-                )),
-        exposureMode: await _initializeCompleter.future
-            .then((event) => event.exposureMode),
-        focusMode:
-            await _initializeCompleter.future.then((event) => event.focusMode),
-        exposurePointSupported: await _initializeCompleter.future
-            .then((event) => event.exposurePointSupported),
-        focusPointSupported: await _initializeCompleter.future
-            .then((event) => event.focusPointSupported),
+        codecType: cameraInitializedEvent.codecType,
+        previewSize: Size(
+          cameraInitializedEvent.previewWidth,
+          cameraInitializedEvent.previewHeight,
+        ),
+        exposureMode: cameraInitializedEvent.exposureMode,
+        focusMode: cameraInitializedEvent.focusMode,
+        exposurePointSupported: cameraInitializedEvent.exposurePointSupported,
+        focusPointSupported: cameraInitializedEvent.focusPointSupported,
       );
     } on PlatformException catch (e) {
       throw CameraException(e.code, e.message);

@@ -190,7 +190,7 @@ static ExposureMode getExposureModeForString(NSString *mode) {
     }
 }
 
-static AVVideoCodecType getAVVideoCodecTypeForString(NSString *codecType){
+static AVVideoCodecType getCodecTypeForString(NSString *codecType){
     if (@available(iOS 11.0, *)) {
         if([codecType isEqualToString:@"HEVC"]){
             return AVVideoCodecTypeHEVC;
@@ -205,6 +205,15 @@ static AVVideoCodecType getAVVideoCodecTypeForString(NSString *codecType){
                                                                       stringWithFormat:@"Unknown codec type %@", codecType]
                                      }];
     @throw error;
+}
+
+static NSString *getStringForCodecType(AVVideoCodecType codecType){
+    if([codecType isEqualToString:AVVideoCodecTypeHEVC]){
+        return @"HEVC";
+    }else if([codecType isEqualToString:AVVideoCodecTypeH264]){
+        return @"H264";
+    }
+    return nil;
 }
 
 static UIDeviceOrientation getUIDeviceOrientationForString(NSString *orientation) {
@@ -334,6 +343,7 @@ AVCaptureAudioDataOutputSampleBufferDelegate>
 @property(readonly) CVPixelBufferRef volatile latestPixelBuffer;
 @property(readonly, nonatomic) CGSize previewSize;
 @property(readonly, nonatomic) CGSize captureSize;
+@property(readonly, nonatomic) AVVideoCodecType codecType;
 @property(strong, nonatomic) AVAssetWriter *videoWriter;
 @property(strong, nonatomic) AVAssetWriterInput *videoWriterInput;
 @property(strong, nonatomic) AVAssetWriterInput *audioWriterInput;
@@ -367,7 +377,6 @@ AVCaptureAudioDataOutputSampleBufferDelegate>
 }
 // Format used for video and image streaming.
 FourCharCode videoFormat = kCVPixelFormatType_32BGRA;
-AVVideoCodecType _codecType;
 NSString *const errorMethod = @"error";
 
 - (instancetype)initWithCameraName:(NSString *)cameraName
@@ -393,7 +402,6 @@ NSString *const errorMethod = @"error";
     _focusMode = FocusModeAuto;
     _lockedCaptureOrientation = UIDeviceOrientationUnknown;
     _deviceOrientation = orientation;
-    _codecType = codecType;
     
     NSError *localError = nil;
     _captureVideoInput = [AVCaptureDeviceInput deviceInputWithDevice:_captureDevice
@@ -406,8 +414,10 @@ NSString *const errorMethod = @"error";
     
     _captureVideoOutput = [AVCaptureVideoDataOutput new];
     
+    
+    
     _captureVideoOutput.videoSettings =
-         @{(NSString *)kCVPixelBufferPixelFormatTypeKey : @(videoFormat)};
+    @{(NSString *)kCVPixelBufferPixelFormatTypeKey : @(videoFormat)};
     [_captureVideoOutput setAlwaysDiscardsLateVideoFrames:YES];
     [_captureVideoOutput setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
     
@@ -433,6 +443,15 @@ NSString *const errorMethod = @"error";
     
     [self setCaptureSessionPreset:_resolutionPreset];
     [self updateOrientation];
+    
+    if (@available(iOS 11.0, *)) {
+        NSArray<AVVideoCodecType> *availableVideoCodecTypes = [_captureVideoOutput availableVideoCodecTypesForAssetWriterWithOutputFileType:AVFileTypeMPEG4];
+        if ([availableVideoCodecTypes containsObject:codecType]) {
+            _codecType = codecType;
+        }else{
+            printf("codec type not available");
+        }
+    }
     
     return self;
 }
@@ -1235,18 +1254,10 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         return NO;
     }
     
-   
+    
     NSDictionary *videoSettings;
-    // add codec type
     if(_codecType) {
-        if (@available(iOS 11.0, *)) {
-            NSArray<AVVideoCodecType> *availableVideoCodecTypes = [_captureVideoOutput availableVideoCodecTypesForAssetWriterWithOutputFileType:AVFileTypeMPEG4];
-            if ([availableVideoCodecTypes containsObject:_codecType]) {
-               videoSettings = [_captureVideoOutput recommendedVideoSettingsForVideoCodecType:_codecType assetWriterOutputFileType:AVFileTypeMPEG4];
-            }else{
-                printf("codec type not available");
-            }
-        }
+        videoSettings = [_captureVideoOutput recommendedVideoSettingsForVideoCodecType:_codecType assetWriterOutputFileType:AVFileTypeMPEG4];
     }else{
         videoSettings = [_captureVideoOutput
                          recommendedVideoSettingsForAssetWriterWithOutputFileType:AVFileTypeMPEG4];
@@ -1444,7 +1455,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         NSString* codecTypeString = call.arguments[@"codecType"];
         AVVideoCodecType codecType;
         if(codecTypeString){
-            codecType = getAVVideoCodecTypeForString(codecTypeString);
+            codecType = getCodecTypeForString(codecTypeString);
         }
         NSError *error;
         FLTCam *cam = [[FLTCam alloc] initWithCameraName:cameraName
@@ -1492,17 +1503,25 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
                                                                           (unsigned long)cameraId]
                                                    binaryMessenger:_messenger];
             _camera.methodChannel = methodChannel;
+            NSString *codecType =getStringForCodecType([_camera codecType]);
+            NSMutableDictionary *_arguments =  [NSMutableDictionary dictionary];
+           [_arguments addEntriesFromDictionary: @{
+               @"previewWidth" : @(_camera.previewSize.width),
+               @"previewHeight" : @(_camera.previewSize.height),
+               @"exposureMode" : getStringForExposureMode([_camera exposureMode]),
+               @"focusMode" : getStringForFocusMode([_camera focusMode]),
+               @"codecType" : codecType,
+               @"exposurePointSupported" :
+                   @([_camera.captureDevice isExposurePointOfInterestSupported]),
+               @"focusPointSupported" : @([_camera.captureDevice isFocusPointOfInterestSupported]),
+           }];
+            if(codecType){
+                [_arguments setObject: codecType forKey:@"codecType"];
+            }
+            
             [methodChannel
              invokeMethod:@"initialized"
-             arguments:@{
-                 @"previewWidth" : @(_camera.previewSize.width),
-                 @"previewHeight" : @(_camera.previewSize.height),
-                 @"exposureMode" : getStringForExposureMode([_camera exposureMode]),
-                 @"focusMode" : getStringForFocusMode([_camera focusMode]),
-                 @"exposurePointSupported" :
-                     @([_camera.captureDevice isExposurePointOfInterestSupported]),
-                 @"focusPointSupported" : @([_camera.captureDevice isFocusPointOfInterestSupported]),
-             }];
+             arguments:_arguments];
             [self sendDeviceOrientation:[UIDevice currentDevice].orientation];
             [_camera start];
             result(nil);
@@ -1522,7 +1541,8 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
             result(nil);
         } else if ([@"startVideoRecording" isEqualToString:call.method]) {
             [_camera startVideoRecordingWithResult:result];
-        } else if ([@"stopVideoRecording" isEqualToString:call.method]) {
+        }
+        else if ([@"stopVideoRecording" isEqualToString:call.method]) {
             [_camera stopVideoRecordingWithResult:result];
         } else if ([@"pauseVideoRecording" isEqualToString:call.method]) {
             [_camera pauseVideoRecordingWithResult:result];

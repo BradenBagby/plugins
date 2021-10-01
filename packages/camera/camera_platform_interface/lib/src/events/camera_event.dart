@@ -62,20 +62,24 @@ class CameraInitializedEvent extends CameraEvent {
   /// Whether setting focus points is supported.
   final bool focusPointSupported;
 
+  /// Codec type of video recording // TODO: android
+  final CodecType? codecType;
+
   /// Build a CameraInitialized event triggered from the camera represented by
   /// `cameraId`.
   ///
   /// The `previewWidth` represents the width of the generated preview in pixels.
   /// The `previewHeight` represents the height of the generated preview in pixels.
   CameraInitializedEvent(
-    int cameraId,
-    this.previewWidth,
-    this.previewHeight,
-    this.exposureMode,
-    this.exposurePointSupported,
-    this.focusMode,
-    this.focusPointSupported,
-  ) : super(cameraId);
+      int cameraId,
+      this.previewWidth,
+      this.previewHeight,
+      this.exposureMode,
+      this.exposurePointSupported,
+      this.focusMode,
+      this.focusPointSupported,
+      this.codecType)
+      : super(cameraId);
 
   /// Converts the supplied [Map] to an instance of the [CameraInitializedEvent]
   /// class.
@@ -86,6 +90,7 @@ class CameraInitializedEvent extends CameraEvent {
         exposurePointSupported = json['exposurePointSupported'] ?? false,
         focusMode = deserializeFocusMode(json['focusMode']),
         focusPointSupported = json['focusPointSupported'] ?? false,
+        codecType = deserializeCodecType(json['codecType']),
         super(json['cameraId']);
 
   /// Converts the [CameraInitializedEvent] instance into a [Map] instance that
@@ -98,6 +103,7 @@ class CameraInitializedEvent extends CameraEvent {
         'exposurePointSupported': exposurePointSupported,
         'focusMode': serializeFocusMode(focusMode),
         'focusPointSupported': focusPointSupported,
+        'codecType': codecType
       };
 
   @override
@@ -111,7 +117,8 @@ class CameraInitializedEvent extends CameraEvent {
           exposureMode == other.exposureMode &&
           exposurePointSupported == other.exposurePointSupported &&
           focusMode == other.focusMode &&
-          focusPointSupported == other.focusPointSupported;
+          focusPointSupported == other.focusPointSupported &&
+          codecType == other.codecType;
 
   @override
   int get hashCode =>
@@ -121,7 +128,8 @@ class CameraInitializedEvent extends CameraEvent {
       exposureMode.hashCode ^
       exposurePointSupported.hashCode ^
       focusMode.hashCode ^
-      focusPointSupported.hashCode;
+      focusPointSupported.hashCode ^
+      codecType.hashCode;
 }
 
 /// An event fired when the resolution preset of the camera has changed.

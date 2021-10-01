@@ -500,6 +500,7 @@ class MethodChannelCamera extends CameraPlatform {
           call.arguments['exposurePointSupported'],
           deserializeFocusMode(call.arguments['focusMode']),
           call.arguments['focusPointSupported'],
+          deserializeCodecType(call.arguments['codecType']),
         ));
         break;
       case 'resolution_changed':
