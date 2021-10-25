@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:cross_file/cross_file.dart';
+import 'package:image_picker_platform_interface/src/types/video_export_quality.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:image_picker_platform_interface/src/method_channel/method_channel_image_picker.dart';
 import 'package:image_picker_platform_interface/src/types/types.dart';
@@ -224,12 +225,16 @@ abstract class ImagePickerPlatform extends PlatformInterface {
   ///
   /// In Android, the MainActivity can be destroyed for various fo reasons. If that happens, the result will be lost
   /// in this call. You can then call [getLostData] when your app relaunches to retrieve the lost data.
+  /// 
+  /// The [requestedExportQuality] argument specifies the desired video quality on iOS only. The chosen video will automatically be compressed to this quality. 
+  /// The resulting video is not guarenteed to match the requested quality
   ///
   /// If no images were picked, the return value is null.
   Future<XFile?> getVideo({
     required ImageSource source,
     CameraDevice preferredCameraDevice = CameraDevice.rear,
     Duration? maxDuration,
+    VideoExportQuality? requestedExportQuality
   }) {
     throw UnimplementedError('getVideo() has not been implemented.');
   }
