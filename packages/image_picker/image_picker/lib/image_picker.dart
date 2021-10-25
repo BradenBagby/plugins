@@ -15,6 +15,7 @@ export 'package:image_picker_platform_interface/image_picker_platform_interface.
         LostData,
         LostDataResponse,
         PickedFile,
+        VideoExportQuality,
         XFile,
         RetrieveType;
 
@@ -274,15 +275,16 @@ class ImagePicker {
   /// temporary file could not be created and video could not be cached (iOS only),
   /// plugin activity could not be allocated (Android only) or due to an unknown error.
   ///
-  Future<XFile?> pickVideo({
-    required ImageSource source,
-    CameraDevice preferredCameraDevice = CameraDevice.rear,
-    Duration? maxDuration,
-  }) {
+  Future<XFile?> pickVideo(
+      {required ImageSource source,
+      CameraDevice preferredCameraDevice = CameraDevice.rear,
+      Duration? maxDuration,
+      VideoExportQuality? requestedExportQuality}) {
     return platform.getVideo(
       source: source,
       preferredCameraDevice: preferredCameraDevice,
       maxDuration: maxDuration,
+      requestedExportQuality: requestedExportQuality,
     );
   }
 

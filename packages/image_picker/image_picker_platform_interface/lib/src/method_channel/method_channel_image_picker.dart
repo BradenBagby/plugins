@@ -138,7 +138,7 @@ class MethodChannelImagePicker extends ImagePickerPlatform {
         'source': source.index,
         'maxDuration': maxDuration?.inSeconds,
         'cameraDevice': preferredCameraDevice.index,
-        'requestedExportQuality': requestedExportQuality,
+        'requestedExportQuality': requestedExportQuality?.index,
       },
     );
   }
