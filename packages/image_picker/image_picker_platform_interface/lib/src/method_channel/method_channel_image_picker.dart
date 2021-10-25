@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker_platform_interface/src/types/video_export_quality.dart';
 import 'package:meta/meta.dart' show visibleForTesting;
 
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
@@ -126,17 +127,18 @@ class MethodChannelImagePicker extends ImagePickerPlatform {
     return path != null ? PickedFile(path) : null;
   }
 
-  Future<String?> _getVideoPath({
-    required ImageSource source,
-    CameraDevice preferredCameraDevice = CameraDevice.rear,
-    Duration? maxDuration,
-  }) {
+  Future<String?> _getVideoPath(
+      {required ImageSource source,
+      CameraDevice preferredCameraDevice = CameraDevice.rear,
+      Duration? maxDuration,
+      VideoExportQuality? requestedExportQuality}) {
     return _channel.invokeMethod<String>(
       'pickVideo',
       <String, dynamic>{
         'source': source.index,
         'maxDuration': maxDuration?.inSeconds,
-        'cameraDevice': preferredCameraDevice.index
+        'cameraDevice': preferredCameraDevice.index,
+        'requestedExportQuality': requestedExportQuality,
       },
     );
   }
@@ -212,16 +214,16 @@ class MethodChannelImagePicker extends ImagePickerPlatform {
   }
 
   @override
-  Future<XFile?> getVideo({
-    required ImageSource source,
-    CameraDevice preferredCameraDevice = CameraDevice.rear,
-    Duration? maxDuration,
-  }) async {
+  Future<XFile?> getVideo(
+      {required ImageSource source,
+      CameraDevice preferredCameraDevice = CameraDevice.rear,
+      Duration? maxDuration,
+      VideoExportQuality? requestedExportQuality}) async {
     final String? path = await _getVideoPath(
-      source: source,
-      maxDuration: maxDuration,
-      preferredCameraDevice: preferredCameraDevice,
-    );
+        source: source,
+        maxDuration: maxDuration,
+        preferredCameraDevice: preferredCameraDevice,
+        requestedExportQuality: requestedExportQuality);
     return path != null ? XFile(path) : null;
   }
 
