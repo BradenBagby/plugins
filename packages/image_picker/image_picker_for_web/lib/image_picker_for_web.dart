@@ -142,6 +142,7 @@ class ImagePickerPlugin extends ImagePickerPlatform {
     required ImageSource source,
     CameraDevice preferredCameraDevice = CameraDevice.rear,
     Duration? maxDuration,
+    VideoExportQuality? requestedExportQuality
   }) async {
     String? capture = computeCaptureAttribute(source, preferredCameraDevice);
     List<XFile> files = await getFiles(
