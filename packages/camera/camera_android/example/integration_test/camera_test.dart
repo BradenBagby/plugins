@@ -224,7 +224,6 @@ void main() {
     await controller.prepareForVideoRecording();
 
     await controller.startVideoRecording();
-    sleep(const Duration(milliseconds: 500));
 
     // set description while recording requires android >= 26
     final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
@@ -237,8 +236,6 @@ void main() {
       expect(controller.description, cameras[0]);
     } else {
       await controller.setDescription(cameras[1]);
-      sleep(const Duration(milliseconds: 500));
-
       expect(controller.description, cameras[1]);
     }
   });
